@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>lxbchat 设备管理</title>
+    <!--script src="https://cdn.tailwindcss.com"></script-->
+<!--script src="https://cdn.bootcdn.net/ajax/libs/tailwindcss/3.4.1/index.min.js"></script-->
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!--style>
+        .container { max-width: 600px; margin: 0 auto; padding: 1rem; }
+        .card { background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1rem; }
+        .btn { @apply px-4 py-2 rounded-lg font-medium transition-colors; }
+        .btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+        .btn-secondary { @apply bg-gray-200 text-gray-800 hover:bg-gray-300; }
+        .btn-danger { @apply bg-red-500 text-white hover:bg-red-600; }
+        .input { @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500; }
+        .error { @apply text-red-600 text-sm mt-1; }
+    </style-->
+</head>
+<body class="bg-gray-100">
+    <div id="app" class="container">
+        <!-- 登录/注册页 -->
+        <div v-if="!user">
+            <div class="card">
+                <h1 class="text-2xl font-bold text-center mb-6">lxbchat 设备管理</h1>
+                <div class="mb-4">
+                    <div class="flex gap-2 mb-4">
+                        <button @click="authMode='login'" :class="['flex-1 btn', authMode==='login'?'btn-primary':'btn-secondary']">登录</button>
+                        <button @click="authMode='register'" :class="['flex-1 btn', authMode==='register'?'btn-primary':'btn-secondary']">注册</button>
+                    </div>
+                    <div v-if="authMode==='login'">
+                        <div class="mb-3">
+                            <input v-model="loginUsername" type="text" placeholder="用户名" class="input">
+                        </div>
+                        <div class="mb-4">
+                            <input v-model="loginPassword" type="password" placeholder="密码" class="input">
+                        </div>
+                        <button @click="login" class="btn btn-primary w-full">登录</button>
+                    </div>
+                    <div v-if="authMode==='register'">
+                        <div class="mb-3">
+                            <input v-model="regUsername" type="text" placeholder="用户名" class="input">
+                        </div>
+                        <div class="mb-4">
+                            <input v-model="regPassword" type="password" placeholder="密码" class="input">
+                        </div>
+                        <button @click="register" class="btn btn-primary w-full">注册</button>
+                    </div>
+                    <div v-if="authError" class="error mt-2">{{ authError }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设备管理页 -->
+        <div v-else>
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">设备列表</h2>
+                    <div>
+                        <span class="mr-2">{{ user.username }}</span>
+                        <button @click="logout" class="btn btn-secondary text-sm">退出</button>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-2">添加新设备</h3>
+                    <div class="space-y-3">
+                        <input v-model="newDevice.name" type="text" placeholder="设备名称 (例如: 爸爸)" class="input">
+                        <input v-model="newDevice.endpoint" type="text" placeholder="MCP 端点 (wss://...)" class="input">
+                        <button @click="addDevice" :disabled="loading" class="btn btn-primary w-full">
+                            {{ loading ? '添加中...' : '添加设备' }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="devices.length === 0" class="text-gray-500 text-center py-4">
+                    暂无设备，请添加
+                </div>
+
+                <div v-for="dev in devices" :key="dev.id" class="border rounded-lg p-3 mb-2 flex items-center justify-between">
+                    <div>
+                        <div class="font-medium">{{ dev.device_name }}</div>
+                        <div class="text-xs text-gray-500 break-all">{{ dev.mcp_endpoint }}</div>
+                        <div class="text-xs text-gray-400">添加于 {{ new Date(dev.created_at).toLocaleString() }}</div>
+                    </div>
+                    <button @click="deleteDevice(dev.id)" class="btn-danger text-sm px-3 py-1 rounded">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        const { createApp, ref, reactive } = Vue;
+
+        const app = createApp({
+            setup() {
+                const authMode = ref('login');
+                const loginUsername = ref('');
+                const loginPassword = ref('');
+                const regUsername = ref('');
+                const regPassword = ref('');
+                const authError = ref('');
+
+                const user = ref(null);
+                const devices = ref([]);
+                const newDevice = reactive({ name: '', endpoint: '' });
+                const loading = ref(false);
+
+                const apiBase = './api.php'; // 若不同路径请修改
+
+                // 检查登录状态（通过session，页面加载时尝试获取用户信息）
+                const checkSession = async () => {
+                    try {
+                        const res = await axios.get(apiBase + '?action=devices');
+                        // 如果能获取设备列表，说明已登录，并且返回了列表
+                        devices.value = res.data;
+                        user.value = { username: '当前用户' }; // 实际用户名可以从cookie或额外接口获取，这里简化
+                        // 理想情况应有一个获取用户信息的接口，但为了演示，我们保留用户名从登录响应获取
+                        // 所以暂不自动恢复
+                    } catch (e) {
+                        // 未登录
+                    }
+                };
+                // checkSession(); // 暂不自动恢复，让用户主动登录
+
+                const login = async () => {
+                    if (!loginUsername.value || !loginPassword.value) {
+                        authError.value = '请输入用户名和密码';
+                        return;
+                    }
+                    try {
+                        const form = new FormData();
+                        form.append('action', 'login');
+                        form.append('username', loginUsername.value);
+                        form.append('password', loginPassword.value);
+                        const res = await axios.post(apiBase, form, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        if (res.data.success) {
+                            user.value = res.data.user;
+                            authError.value = '';
+                            loadDevices();
+                        } else {
+                            authError.value = res.data.error || '登录失败';
+                        }
+                    } catch (err) {
+                        authError.value = err.response?.data?.error || '网络错误';
+                    }
+                };
+
+                const register = async () => {
+                    if (!regUsername.value || !regPassword.value) {
+                        authError.value = '请输入用户名和密码';
+                        return;
+                    }
+                    try {
+                        const form = new FormData();
+                        form.append('action', 'register');
+                        form.append('username', regUsername.value);
+                        form.append('password', regPassword.value);
+                        const res = await axios.post(apiBase, form, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        if (res.data.success) {
+                            authError.value = '';
+                            authMode.value = 'login';
+                            loginUsername.value = regUsername.value;
+                            alert('注册成功，请登录');
+                        } else {
+                            authError.value = res.data.error || '注册失败';
+                        }
+                    } catch (err) {
+                        authError.value = err.response?.data?.error || '网络错误';
+                    }
+                };
+
+                const logout = async () => {
+                    // 简单前端登出，不调用后端（因为session还在，但没关系，下次访问会重新登录）
+                    user.value = null;
+                    devices.value = [];
+                };
+
+                const loadDevices = async () => {
+                    try {
+                        const res = await axios.get(apiBase + '?action=devices');
+                        devices.value = res.data;
+                    } catch (err) {
+                        console.error(err);
+                    }
+                };
+
+                const addDevice = async () => {
+                    if (!newDevice.name || !newDevice.endpoint) {
+                        alert('请填写完整');
+                        return;
+                    }
+                    loading.value = true;
+                    try {
+                        const form = new FormData();
+                        form.append('action', 'add_device');
+                        form.append('device_name', newDevice.name);
+                        form.append('mcp_endpoint', newDevice.endpoint);
+                        const res = await axios.post(apiBase, form, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        if (res.data.success) {
+                            newDevice.name = '';
+                            newDevice.endpoint = '';
+                            loadDevices();
+                        } else {
+                            alert(res.data.error || '添加失败');
+                        }
+                    } catch (err) {
+                        alert('添加失败：' + (err.response?.data?.error || err.message));
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const deleteDevice = async (id) => {
+                    if (!confirm('确定删除该设备？')) return;
+                    try {
+                        await axios.delete(apiBase + '?action=delete_device&id=' + id);
+                        loadDevices();
+                    } catch (err) {
+                        alert('删除失败');
+                    }
+                };
+
+                return {
+                    authMode,
+                    loginUsername,
+                    loginPassword,
+                    regUsername,
+                    regPassword,
+                    authError,
+                    user,
+                    devices,
+                    newDevice,
+                    loading,
+                    login,
+                    register,
+                    logout,
+                    addDevice,
+                    deleteDevice
+                };
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>

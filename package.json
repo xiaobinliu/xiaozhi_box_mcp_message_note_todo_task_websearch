@@ -1,0 +1,12 @@
+{
+  "name": "lxbchat",
+  "version": "1.0.0",
+  "description": "家庭聊天室MCP服务",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "ws": "^8.19.0"
+  }
+}

@@ -1,0 +1,222 @@
+/* style.css - lxbchat 设备管理页面样式 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f4f6fb;
+    color: #1e293b;
+    line-height: 1.5;
+    padding: 1rem;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* 卡片通用样式 */
+.card {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.1), 0 5px 10px -4px rgba(0, 0, 0, 0.05);
+    padding: 1.8rem 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* 标题 */
+h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+    color: #0f172a;
+}
+
+h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+    color: #334155;
+}
+
+/* 按钮组 */
+.flex {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn {
+    display: inline-block;
+    border: none;
+    border-radius: 40px;
+    padding: 0.7rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    color: #1e293b;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    flex: 1;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    box-shadow: 0 4px 10px -2px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 30px;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 输入框 */
+.input {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 40px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: white;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* 错误信息 */
+.error {
+    color: #ef4444;
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+    padding-left: 0.5rem;
+}
+
+/* 设备列表项 */
+.device-item {
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 1.2rem;
+    margin-bottom: 0.8rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+.device-item:hover {
+    background: white;
+    border-color: #cbd5e1;
+}
+
+.device-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.device-name {
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.2rem;
+}
+
+.device-endpoint {
+    font-size: 0.8rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.device-time {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 0.3rem;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    color: #94a3b8;
+    padding: 2rem 0;
+    font-style: italic;
+}
+
+/* 分隔线 */
+hr {
+    border: none;
+    border-top: 2px solid #e2e8f0;
+    margin: 1.5rem 0;
+}
+
+/* 移动端优化 */
+@media (max-width: 480px) {
+    .card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .device-endpoint {
+        max-width: 180px;
+    }
+}
